@@ -45,15 +45,19 @@ brew install opentofu ansible jq git curl wget
 if ! command -v docker &> /dev/null; then
     print_error "Docker Desktop is not installed or not running."
     print_status "Please install Docker Desktop from https://www.docker.com/products/docker-desktop/"
-    print_status "After installation, start Docker Desktop and run this script again."
+    print_status "After installation start Docker Desktop and run this script again."
     exit 1
 fi
 
-# Check if Docker is running
+# checking if docker is runnig 
 if ! docker info &> /dev/null; then
-    print_error "Docker is not running. Please start Docker Desktop and try again."
+    print_error "Docker is not running. Going to run."
+    # start Docker Desktop
+    open -a Docker
     exit 1
-fi
+fi 
+
+
 
 print_status "Docker is running successfully"
 
@@ -69,7 +73,7 @@ fi
 print_status "Creating project directories..."
 cd ..
 # (Optional) Set permissions on inventory scripts if needed
-chmod +x ansible/inventory/your_inventory_script.py
+# chmod +x ansible/inventory/your_inventory_script.py
 
 # Start Semaphore UI with MySQL backend using Docker Compose
 print_status "Starting Semaphore UI with MySQL backend..."
