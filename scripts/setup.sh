@@ -90,16 +90,16 @@ print_status "Waiting for Semaphore services to initialize..."
 sleep 30
 
 # (Optional) Initialize MySQL tables for Semaphore state storage
-if docker ps --format '{{.Names}}' | grep -q 'semaphore_mysql_1'; then
-    print_status "Initializing MySQL database tables for Semaphore..."
-    if [ -f semaphore/init-mysql.sql ]; then
-        docker exec -i semaphore_mysql_1 mysql -u semaphore -psemaphore semaphore < semaphore/init-mysql.sql
-    else
-        print_warning "init-mysql.sql not found; skipping MySQL table initialization."
-    fi
-else
-    print_warning "Semaphore MySQL container not detected; skipping MySQL table initialization."
-fi
+# if docker ps --format '{{.Names}}' | grep -q 'semaphore_mysql_1'; then
+#     print_status "Initializing MySQL database tables for Semaphore..."
+#     if [ -f semaphore/init-mysql.sql ]; then
+#         docker exec -i semaphore_mysql_1 mysql -u semaphore -psemaphore semaphore < semaphore/init-mysql.sql
+#     else
+#         print_warning "init-mysql.sql not found; skipping MySQL table initialization."
+#     fi
+# else
+#     print_warning "Semaphore MySQL container not detected; skipping MySQL table initialization."
+# fi
 
 # Initialize OpenTofu
 print_status "Initializing OpenTofu..."
