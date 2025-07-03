@@ -1,0 +1,46 @@
+- name: Install Essential Software Packages
+  hosts: vm_containers
+  become: yes
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+      notify: start nginx
+
+    - name: Install MySQL Server
+      apt:
+        name: mysql-server
+        state: present
+      notify: start mysql
+
+    - name: Install Python3 and development tools
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python3
+        - python3-pip
+        - python3-dev
+        - build-essential
+
+  handlers:
+    - name: start nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: start mysql
+      systemd:
+        name: mysql
+        state: started
+        enabled: yes
+        daemon_reload: yes

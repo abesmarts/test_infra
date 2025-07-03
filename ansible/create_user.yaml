@@ -1,0 +1,75 @@
+- name: Create and Configure User Accounts
+  hosts: vm_containers
+  become: yes
+  vars:
+    application_users:
+      - name: webadmin
+        comment: "Web Application Administrator"
+        groups: ["sudo", "www-data"]
+        shell: /bin/bash
+        create_home: yes
+        password: "{{ webadmin_password | password_hash('sha512') }}"
+      - name: dbadmin
+        comment: "Database Administrator"
+        groups: ["sudo"]
+        shell: /bin/bash
+        create_home: yes
+        password: "{{ dbadmin_password | password_hash('sha512') }}"
+      - name: appuser
+        comment: "Application Service User"
+        groups: ["www-data"]
+        shell: /bin/bash
+        create_home: yes
+        system: no
+  tasks:
+    - name: Create application groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - webops
+        - developers
+        - monitoring
+
+    - name: Create user accounts
+      user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        groups: "{{ item.groups | join(',') }}"
+        shell: "{{ item.shell }}"
+        createhome: "{{ item.create_home }}"
+        password: "{{ item.password | default(omit) }}"
+        system: "{{ item.system | default(false) }}"
+        state: present
+      loop: "{{ application_users }}"
+      no_log: true
+
+    - name: Create SSH directories
+      file:
+        path: "/home/{{ item.name }}/.ssh"
+        state: directory
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
+        mode: '0700'
+      loop: "{{ application_users }}"
+      when: item.create_home
+
+    - name: Configure sudo access
+      lineinfile:
+        path: /etc/sudoers.d/{{ item.name }}
+        line: "{{ item.name }} ALL=(ALL) NOPASSWD:ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      loop: "{{ application_users }}"
+      when: "'sudo' in item.groups"
+
+    - name: Add SSH public keys
+      authorized_key:
+        user: "{{ item.name }}"
+        key: "{{ lookup('file', 'files/ssh_keys/' + item.name + '.pub') }}"
+        state: present
+      loop: "{{ application_users }}"
+      when: 
+        - item.create_home
+        - lookup('file', 'files/ssh_keys/' + item.name + '.pub', errors='ignore')

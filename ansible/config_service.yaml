@@ -1,0 +1,83 @@
+- name: Configure System Services and Boot Settings
+  hosts: vm_containers
+  become: yes
+  vars:
+    enabled_services:
+      - nginx
+      - mysql
+      - ssh
+      - ufw
+      - cron
+    disabled_services:
+      - snapd
+      - bluetooth
+    custom_services:
+      - name: webapp
+        description: "Custom Web Application Service"
+        exec_start: "/opt/webapp/start.sh"
+        user: webadmin
+        restart: always
+  tasks:
+    - name: Enable and start services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      loop: "{{ enabled_services }}"
+      ignore_errors: yes
+    - name: Disable unnecessary services
+      systemd:
+        name: "{{ item }}"
+        enabled: no
+        state: stopped
+      loop: "{{ disabled_services }}"
+      ignore_errors: yes
+    - name: Create custom service files
+      template:
+        src: systemd_service.j2
+        dest: "/etc/systemd/system/{{ item.name }}.service"
+        mode: '0644'
+        owner: root
+        group: root
+      loop: "{{ custom_services }}"
+      notify: reload systemd
+    - name: Configure unattended upgrades
+      apt:
+        name: unattended-upgrades
+        state: present
+      when: ansible_os_family == "Debian"
+    - name: Configure log rotation
+      copy:
+        dest: /etc/logrotate.d/custom-apps
+        content: |
+          /var/log/webapp/*.log {
+              daily
+              missingok
+              rotate 30
+              compress
+              delaycompress
+              notifempty
+              create 0644 webadmin webadmin
+              postrotate
+                  systemctl reload webapp
+              endscript
+          }
+        mode: '0644'
+    - name: Set system timezone
+      timezone:
+        name: UTC
+    - name: Install and configure NTP
+      apt:
+        name: ntp
+        state: present
+      notify: restart ntp
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+    - name: restart ntp
+      systemd:
+        name: ntp
+        state: restarted
+        enabled: yes

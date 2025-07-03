@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: semaphore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: semaphore
+      POSTGRES_PASSWORD: semaphore
+      POSTGRES_DB: semaphore
+    volumes:
+      - postgres_/var/lib/postgresql/data
+    networks:
+      - semaphore-network
+
+  semaphore:
+    image: semaphoreui/semaphore:latest
+    container_name: semaphore-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      SEMAPHORE_DB_DIALECT: postgres
+      SEMAPHORE_DB_HOST: postgres
+      SEMAPHORE_DB_PORT: 5432
+      SEMAPHORE_DB_NAME: semaphore
+      SEMAPHORE_DB_USER: semaphore
+      SEMAPHORE_DB_PASS: semaphore
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_PASSWORD: semaphorepassword
+      SEMAPHORE_ADMIN_NAME: Admin
+      SEMAPHORE_ADMIN_EMAIL: admin@example.com
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: someencryptionkey
+      SEMAPHORE_TERRAFORM_ENABLED: "true"
+      SEMAPHORE_OPENTOFU_ENABLED: "true"
+    volumes:
+      - ../ansible:/opt/ansible:ro
+      - ../opentofu:/opt/opentofu:ro
+      - ./ssh-keys:/home/semaphore/.ssh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - semaphore-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_
+
+networks:
+  semaphore-network:
+    driver: bridge

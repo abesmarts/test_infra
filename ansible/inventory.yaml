@@ -1,0 +1,32 @@
+all:
+  children:
+    vm_containers:
+      children:
+        webservers:
+          hosts:
+            web-vm-1:
+              ansible_host: 198.51.100.10
+              ansible_port: 22
+              ansible_user: root
+              vm_role: webserver
+          vars:
+            nginx_port: 80
+            app_environment: production
+        databases:
+          hosts:
+            db-vm-1:
+              ansible_host: 198.51.100.20
+              ansible_port: 22
+              ansible_user: root
+              vm_role: database
+              mysql_port: 3306
+              postgres_port: 5432
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+        ansible_connection: ssh
+        ansible_ssh_private_key_file: ~/.ssh/id_rsa
+        gather_facts: yes
+        become: yes
+        become_method: sudo
+        
